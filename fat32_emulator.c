@@ -84,3 +84,93 @@ void touch_command(const char* name);
 void to_dos_filename(const char* filename, char* dos_filename);
 int validate_fs();
 int find_free_directory_entry(uint32_t dir_cluster, FAT32DirectoryEntry* new_entry);
+
+int main(int args, char* argv[])
+{
+    if (args != 2)
+    {
+        fprintf(stderr, "Usage %s <disk file>\n", argv[0]);
+        return 1;
+    }
+    
+    const char* disk_path = argv[1];
+    struct stat st;
+    if (stat(disk_path, &st) != 0)
+    {
+        printf("Disk file not found. Creating a new one of %d MB.\n", DISK_SIZE_MB);
+        disk_fd = open(disk_path, O_RDWR | O_CREAT, 0644);
+
+        if (disk_fd == -1)
+        {
+            perror("Error creating disk file");
+            return 1;
+        }
+    } else{
+        
+        disk_fd = open(disk_path, O_RDWR);
+        
+        if (disk_fd == -1)
+        {
+            perror("Error opening disk file");
+            return 1;
+        }
+    }
+
+    fs_valid = validate_fs();
+
+    if (fs_valid)
+    {
+        current_cluster = boot_sector.BPB_RootClus;
+    }
+
+    char command_line[256];
+    char* command;
+    char* arg;
+
+    while (1)
+    {
+        printf("%s> ", current_path);
+        fflush(stdout);
+
+        if (fgets(command_line, sizeof(command_line), stdin) == NULL) break;
+        
+        command_line[strcspn(command_line, "\n")] = 0; 
+        command = strtok(command_line, " \t");
+
+        if (!command) continue;
+
+        arg = strtok(NULL, " \t");
+
+        if (strcmp(command, "format") == 0) 
+        {
+            format_disk();
+        } else if (strcmp(command, "exit") == 0) {
+            break;
+        } else {
+            if (!fs_valid && strcmp(command, "format") != 0) 
+            {
+                fprintf(stderr, "Error: Unknown disk format. Please use 'format'.\n");
+                continue;
+            }
+
+            if (strcmp(command, "ls") == 0) 
+            {
+                ls_command(arg);
+            } else if (strcmp(command, "cd") == 0) {
+                if (!arg) fprintf(stderr, "Usage: cd <path>\n");
+                else cd_command(arg);
+            } else if (strcmp(command, "mkdir") == 0) {
+                if (!arg) fprintf(stderr, "Usage: mkdir <name>\n");
+                else mkdir_command(arg);
+            } else if (strcmp(command, "touch") == 0) {
+                if (!arg) fprintf(stderr, "Usage: touch <name>\n");
+                else touch_command(arg);
+            } else {
+                fprintf(stderr, "Unknown command: %s\n", command);
+            }
+        }
+    }
+
+    close(disk_fd);
+    return 0;
+}
