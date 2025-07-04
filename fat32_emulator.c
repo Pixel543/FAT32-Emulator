@@ -61,5 +61,26 @@ typedef struct
     uint16_t DIR_WrtDate;
     uint16_t DIR_FstClusLO;
     uint32_t DIR_FileSize;
-} FAT32Directory;
+} FAT32DirectoryEntry;
 
+#pragma pack(pop)
+
+int disk_fd = -1;
+FAT32BootSector boot_sector;
+char current_path[256] = "/";
+uint32_t current_cluster;
+int fs_valid = 0;
+
+uint32_t cluster_to_sector(uint32_t cluster);
+uint32_t find_free_cluster();
+uint32_t find_path_cluster(const char* path);
+void read_sector(uint32_t sector_num, void* buffer);
+void write_sector(uint32_t sector_num, const void* buffer);
+void format_disk();
+void ls_command(const char* path);
+void cd_command(const char* path);
+void mkdir_command(const char* name);
+void touch_command(const char* name);
+void to_dos_filename(const char* filename, char* dos_filename);
+int validate_fs();
+int find_free_directory_entry(uint32_t dir_cluster, FAT32DirectoryEntry* new_entry);
