@@ -19,9 +19,9 @@ make
 ```
 or
 ```bash
-gcc .\fat32_emulator.c -o main
+gcc .\fat32_emulator.c -o fat32_emulator
 
-main
+.\fat32_emulator
 ```
 
 This will create the `f32disk` executable.
